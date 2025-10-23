@@ -1,0 +1,7 @@
+{
+  "name": "Solitaire AI Guide",
+  "description": "An AI-powered assistant that analyzes your Solitaire game via screen sharing and provides real-time strategic advice to help you win quickly and maximize your score.",
+  "requestFramePermissions": [
+    "display-capture"
+  ]
+}
