@@ -124,6 +124,7 @@ const App: React.FC = () => {
   };
 
   const handleStartSession = async () => {
+    console.log("handleStartSession called");
     try {
     setError(null);
 
