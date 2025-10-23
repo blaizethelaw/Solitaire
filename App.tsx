@@ -1,10 +1,11 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { getSolitaireMove } from './services/geminiService';
+import { getSolitaireMove } from './services/anthropicService';
 import Header from './components/Header';
 import Controls from './components/Controls';
 import SuggestionBox from './components/SuggestionBox';
 import ScreenCapture from './components/ScreenCapture';
+import Instructions from './components/Instructions';
 import { Gamepad2 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -20,13 +21,13 @@ const App: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const captureFrame = useCallback((): string | null => {
+  const captureFrame = useCallback(() => {
     if (!videoRef.current || !canvasRef.current || !videoRef.current.srcObject) {
-      return null;
+    return null;
     }
     const video = videoRef.current;
     if (video.videoWidth === 0 || video.videoHeight === 0) {
-      return null;
+    return null;
     }
 
     const canvas = canvasRef.current;
@@ -36,8 +37,8 @@ const App: React.FC = () => {
     if (!context) return null;
 
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/jpeg', 0.7);
-  }, []);
+    return canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+    }, []);
 
   const handleStopSession = useCallback(() => {
     if (stream) {
@@ -124,22 +125,48 @@ const App: React.FC = () => {
 
   const handleStartSession = async () => {
     try {
-      const displayStream = await navigator.mediaDevices.getDisplayMedia({
-        video: { cursor: 'always' } as any,
-        audio: false,
-      });
-      setStream(displayStream);
-      setIsSessionActive(true);
-      setError(null);
-      setCurrentSuggestions([]);
-      setNextSuggestions([]);
-      displayStream.getVideoTracks()[0].addEventListener('ended', handleStopSession);
-    } catch (err) {
-      console.error('Error starting screen share:', err);
-      setError('Could not start screen sharing. Please grant permission and try again.');
-      setIsSessionActive(false);
+    setError(null);
+
+    // Check if getDisplayMedia is supported
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+    setError('Screen sharing is not supported in this browser. Please use Chrome, Edge, or Firefox.');
+    return;
     }
-  };
+
+    const displayStream = await navigator.mediaDevices.getDisplayMedia({
+    video: true,
+    audio: false
+    });
+
+    // Check if we actually got a video track
+    if (!displayStream || displayStream.getVideoTracks().length === 0) {
+    setError('No video track received. Please try again.');
+    return;
+    }
+
+    setStream(displayStream);
+    setIsSessionActive(true);
+    setCurrentSuggestions([]);
+    setNextSuggestions([]);
+
+    displayStream.getVideoTracks()[0].addEventListener('ended', () => {
+    handleStopSession();
+    });
+    } catch (err) {
+    console.error('Error starting screen share:', err);
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+    setError('You cancelled screen sharing. Click "Start Session" and select your solitaire window when prompted.');
+    } else if (err.name === 'NotFoundError') {
+    setError('No screen was selected. Please try again and choose a window to share.');
+    } else if (err.name === 'AbortError') {
+    setError('Screen sharing was cancelled. Please try again.');
+    } else {
+    setError(`Screen sharing error: ${err.message || 'Unknown error'}. Please try again.`);
+    }
+    setIsSessionActive(false);
+    setStream(null);
+    }
+    };
 
   useEffect(() => {
     if (isSessionActive && stream && videoRef.current) {
@@ -197,6 +224,7 @@ const App: React.FC = () => {
             )}
           </div>
         </main>
+        <Instructions />
       </div>
     </div>
   );
