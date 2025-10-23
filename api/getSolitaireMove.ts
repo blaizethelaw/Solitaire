@@ -5,17 +5,24 @@ export default async function handler(
   request: VercelRequest,
   response: VercelResponse,
 ) {
+  console.log('getSolitaireMove function invoked.');
+
   if (request.method !== 'POST') {
+    console.log('Method not allowed:', request.method);
     return response.status(405).json({ message: 'Method Not Allowed' });
   }
+
+  console.log(`Anthropic API Key Present: ${!!process.env.ANTHROPIC_API_KEY}`);
 
   const { imageBase64, lastMoves } = request.body;
 
   if (!imageBase64) {
+    console.log('Missing imageBase64 in request body.');
     return response.status(400).json({ message: 'Missing imageBase64' });
   }
 
   try {
+    console.log('Calling Anthropic API...');
     const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -71,6 +78,7 @@ ${lastMoves ? `\n\nThe previous suggestions were:\n${lastMoves}\n\nAnalyze the n
     });
 
     const data = await anthropicResponse.json();
+    console.log('Successfully received response from Anthropic API.');
     const text = data.content?.find((c: any) => c.type === 'text')?.text || '';
 
     response.status(200).json({ suggestion: text.trim() });
