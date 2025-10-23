@@ -19,13 +19,13 @@ const LoadingIndicator: React.FC<{text: string}> = ({ text }) => (
 );
 
 
-const SuggestionBox: React.FC<SuggestionBoxProps> = ({ 
-    currentSuggestions, 
-    isLoading, 
+const SuggestionBox: React.FC<SuggestionBoxProps> = ({
+    currentSuggestions,
+    isLoading,
     isInitialAnalysis,
     hasNextMoves,
     onNextMoves,
-    error 
+    error
 }) => {
   const hasSuggestions = currentSuggestions.length > 0;
 
